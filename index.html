@@ -213,12 +213,13 @@ tr:hover td{background:var(--s1)}
       </button>
       <div id="data-menu" style="display:none;position:absolute;right:0;top:calc(100% + 5px);z-index:500">
         <div style="padding:8px 14px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;border-bottom:1px solid var(--bd3)">Data Management</div>
-        <button onclick="saveToLocal();showSaved()" class="menu-item"><i class="ti ti-device-floppy"></i>Save Now</button>
+        <button onclick="autoSave();showSaved()" class="menu-item"><i class="ti ti-device-floppy"></i>Save Now</button>
         <button onclick="exportJSON()" class="menu-item"><i class="ti ti-download"></i>Export Backup (.json)</button>
         <button onclick="document.getElementById('import-json-inp').click()" class="menu-item"><i class="ti ti-upload"></i>Restore from Backup</button>
         <input type="file" id="import-json-inp" accept=".json" style="display:none" onchange="importJSON(this)">
         <div class="menu-sep"></div>
-        <button onclick="openGSSetup()" class="menu-item" style="color:var(--b)"><i class="ti ti-brand-google"></i>Sync with Google Sheets</button>
+        <button onclick="openGHSettings()" class="menu-item" style="color:var(--b)"><i class="ti ti-brand-github"></i>GitHub Data Settings</button>
+        <button onclick="openGSSetup()" class="menu-item" style="color:var(--b)"><i class="ti ti-brand-google"></i>Sync Google Sheets</button>
         <div class="menu-sep"></div>
         <button onclick="clearAllData()" class="menu-item" style="color:var(--r)"><i class="ti ti-trash"></i>Clear Transactions</button>
         <button onclick="logout()" class="menu-item" style="color:var(--r)"><i class="ti ti-logout"></i>Logout</button>
@@ -605,6 +606,35 @@ tr:hover td{background:var(--s1)}
   </div>
 </div>
 
+<!-- GITHUB SETTINGS MODAL -->
+<div class="modal-bg" id="gh-modal" style="display:none;z-index:10000">
+  <div class="modal" style="width:520px">
+    <div class="modal-h">
+      <span class="modal-t"><i class="ti ti-brand-github" style="margin-right:6px"></i>GitHub Data Settings</span>
+      <button class="btn s" onclick="document.getElementById('gh-modal').style.display='none'"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="background:var(--gl);border-radius:var(--ra);padding:10px 13px;margin-bottom:14px;font-size:12px;color:var(--gd);line-height:1.8">
+      <b>Your data lives in data.json.</b> Update index.html (the app) anytime with new features &mdash; your data stays safe in data.json separately.
+    </div>
+    <div style="font-size:12.5px;line-height:2.1;margin-bottom:14px">
+      <b>Step 1:</b> <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--b);font-weight:600">github.com/settings/tokens/new</a><br>
+      <b>Step 2:</b> Note: <b>invenpro</b> &nbsp;&middot;&nbsp; Expiry: <b>No expiration</b> &nbsp;&middot;&nbsp; Scope: check <b>repo</b><br>
+      <b>Step 3:</b> Generate token &rarr; copy it immediately<br>
+      <b>Step 4:</b> Enter below &rarr; Connect
+    </div>
+    <div class="fr"><label>GitHub Repo</label>
+      <input class="fi" id="gh-repo-inp" placeholder="krushnakanha6/invenpro-"></div>
+    <div class="fr" style="margin-bottom:4px"><label>Personal Access Token</label>
+      <input class="fi" id="gh-token-inp" type="password" placeholder="ghp_xxxxxxxxxxxx"></div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px"><i class="ti ti-lock" style="font-size:11px"></i> Stored only in your browser. Never shared.</div>
+    <div class="row">
+      <button class="btn p" onclick="saveGHSettings()"><i class="ti ti-check"></i>Connect &amp; Load Data</button>
+      <button class="btn" onclick="document.getElementById('gh-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- LOGIN SCREEN -->
 <div class="login-bg" id="login-screen">
   <div class="login-box">
@@ -642,232 +672,8 @@ tr:hover td{background:var(--s1)}
 </div><!-- /root -->
 
 <script>
-var DB = {
-  itm: [
-    {n:'8 TO 8 SAUCE',sku:'MS-8TO8S',hsn:'',cat:'Provision',unit:'BTL',sale:60.0,pur:60.0,gst:0,op:0,rl:2.0},
-    {n:'AJWANI',sku:'MS-AJWANI',hsn:'',cat:'Provision',unit:'KG',sale:280.0,pur:280.0,gst:0,op:0,rl:1.0},
-    {n:'ALMOND',sku:'MS-ALMOND',hsn:'',cat:'Provision',unit:'KG',sale:850.0,pur:850.0,gst:0,op:0,rl:1.0},
-    {n:'AMCHUR POWDER',sku:'MS-AMCHURP',hsn:'',cat:'Provision',unit:'KG',sale:415.0,pur:415.0,gst:0,op:0,rl:0.2},
-    {n:'AMUL BUTTER',sku:'MS-AMULBUT',hsn:'',cat:'Dairy',unit:'KG',sale:550.0,pur:550.0,gst:0,op:0,rl:5.0},
-    {n:'AMUL CHEESE',sku:'MS-AMULCHE',hsn:'',cat:'Dairy',unit:'KG',sale:504.0,pur:504.0,gst:0,op:0,rl:5.0},
-    {n:'AMUL CHEESE SLICE 750GM',sku:'MS-AMULCHE',hsn:'',cat:'Dairy',unit:'PKT',sale:400.0,pur:400.0,gst:0,op:0,rl:2.0},
-    {n:'AMUL FRESH CREAM',sku:'MS-AMULFRE',hsn:'',cat:'Dairy',unit:'PKT',sale:208.0,pur:208.0,gst:0,op:0,rl:24.0},
-    {n:'AMUL PIZZA CHEESE',sku:'MS-AMULPIZ',hsn:'',cat:'Dairy',unit:'KG',sale:554.0,pur:554.0,gst:0,op:0,rl:14.0},
-    {n:'Apple Cider',sku:'MS-APPLECI',hsn:'',cat:'Provision',unit:'BTL',sale:95.0,pur:95.0,gst:0,op:0,rl:0},
-    {n:'APPLE GREEN COLOR',sku:'MS-APPLEGR',hsn:'',cat:'Provision',unit:'TIN',sale:89.0,pur:89.0,gst:0,op:0,rl:1.0},
-    {n:'APRICOT',sku:'MS-APRICOT',hsn:'',cat:'Provision',unit:'KG',sale:380.0,pur:380.0,gst:0,op:0,rl:1.5},
-    {n:'KNOR AROMAT POWDER',sku:'MS-KNORARO',hsn:'',cat:'Provision',unit:'PKT',sale:210.0,pur:210.0,gst:0,op:0,rl:6.0},
-    {n:'ATTA AASHIRVAAD',sku:'MS-ATTAAAS',hsn:'',cat:'Provision',unit:'KG',sale:53.0,pur:53.0,gst:0,op:0,rl:25.0},
-    {n:'B.RICE',sku:'MS-BRICE',hsn:'',cat:'Provision',unit:'KG',sale:95.0,pur:95.0,gst:0,op:0,rl:90.0},
-    {n:'BAKING POWDER',sku:'MS-BAKINGP',hsn:'',cat:'Provision',unit:'PKT',sale:87.1,pur:87.1,gst:0,op:0,rl:0},
-    {n:'Balsmik Vinegar',sku:'MS-BALSMIK',hsn:'',cat:'Provision',unit:'BTL',sale:250.0,pur:250.0,gst:0,op:0,rl:0},
-    {n:'Basan',sku:'MS-BASAN',hsn:'',cat:'Provision',unit:'KG',sale:91.1,pur:91.1,gst:0,op:0,rl:2.0},
-    {n:'BAY LEF',sku:'MS-BAYLEF',hsn:'',cat:'Provision',unit:'KG',sale:160.0,pur:160.0,gst:0,op:0,rl:0.2},
-    {n:'black bean sauce',sku:'MS-BLACKBE',hsn:'',cat:'Provision',unit:'BTL',sale:195.0,pur:195.0,gst:0,op:0,rl:2.0},
-    {n:'BLACK DAL',sku:'MS-BLACKDA',hsn:'',cat:'Provision',unit:'KG',sale:132.0,pur:132.0,gst:0,op:0,rl:3.0},
-    {n:'BLACK OLIVE 3L',sku:'MS-BLACKOL',hsn:'',cat:'Provision',unit:'TIN',sale:772.0,pur:772.0,gst:0,op:0,rl:2.0},
-    {n:'BLACK PEPPER WHOLE',sku:'MS-BLACKPE',hsn:'',cat:'Provision',unit:'KG',sale:890.0,pur:890.0,gst:0,op:0,rl:2.0},
-    {n:'BLACK SALT',sku:'MS-BLACKSA',hsn:'',cat:'Provision',unit:'KG',sale:45.0,pur:45.0,gst:0,op:0,rl:1.0},
-    {n:'BREAD CRUMBS',sku:'MS-BREADCR',hsn:'',cat:'Provision',unit:'KG',sale:129.16,pur:129.16,gst:0,op:0,rl:8.0},
-    {n:'BREAD IMPURER',sku:'MS-BREADIM',hsn:'',cat:'Provision',unit:'KG',sale:280.0,pur:280.0,gst:0,op:0,rl:1.0},
-    {n:'BROWN SUGAR',sku:'MS-BROWNSU',hsn:'',cat:'Provision',unit:'KG',sale:88.0,pur:88.0,gst:0,op:0,rl:1.0},
-    {n:'BUTTER PAPER Printed',sku:'MS-BUTTERP',hsn:'',cat:'Packaging & Dis.',unit:'PCS',sale:5.5,pur:5.5,gst:0,op:0,rl:1000.0},
-    {n:'Custad Powder Vanila',sku:'MS-CUSTADP',hsn:'',cat:'Provision',unit:'KG',sale:145.0,pur:145.0,gst:0,op:0,rl:2.0},
-    {n:'CHANA DAL',sku:'MS-CHANADA',hsn:'',cat:'Provision',unit:'KG',sale:85.0,pur:85.0,gst:0,op:0,rl:2.0},
-    {n:'CHARCOAL',sku:'MS-CHARCOAL',hsn:'',cat:'Fuel',unit:'KG',sale:32.0,pur:32.0,gst:0,op:0,rl:100.0},
-    {n:'CHAAT MASALA',sku:'MS-CHAATMA',hsn:'',cat:'Provision',unit:'KG',sale:266.0,pur:266.0,gst:0,op:0,rl:2.0},
-    {n:'Chicken Both Powder',sku:'MS-CHICKEN',hsn:'',cat:'Provision',unit:'PKT',sale:350.0,pur:350.0,gst:0,op:0,rl:0},
-    {n:'CHILIFLKAS SACHETS 150',sku:'MS-CHILIFLK',hsn:'',cat:'Provision',unit:'PKT',sale:80.0,pur:80.0,gst:0,op:0,rl:3.0},
-    {n:'CHOCOLATE SYRUP',sku:'MS-CHOCOLAT',hsn:'',cat:'Provision',unit:'BTL',sale:210.0,pur:210.0,gst:0,op:0,rl:3.0},
-    {n:'CLAN WRAP',sku:'MS-CLANWRA',hsn:'',cat:'Hk Cleaning Material',unit:'NOS',sale:443.0,pur:443.0,gst:0,op:0,rl:6.0},
-    {n:'CLOVE',sku:'MS-CLOVE',hsn:'',cat:'Provision',unit:'KG',sale:1129.0,pur:1129.0,gst:0,op:0,rl:0.2},
-    {n:'COCONUT MILK (KARA)',sku:'MS-COCONUT',hsn:'',cat:'Provision',unit:'TIN',sale:140.0,pur:140.0,gst:0,op:0,rl:12.0},
-    {n:'COCONUT MILK POWDER',sku:'MS-COCONUT',hsn:'',cat:'Provision',unit:'KG',sale:777.0,pur:777.0,gst:0,op:0,rl:0},
-    {n:'HUA TAI Cooking VINEGAR',sku:'MS-HUATAI',hsn:'',cat:'Provision',unit:'BTL',sale:232.46,pur:232.46,gst:0,op:0,rl:2.0},
-    {n:'Cooking Wine White',sku:'MS-COOKING',hsn:'',cat:'Provision',unit:'BTL',sale:232.46,pur:232.46,gst:0,op:0,rl:0},
-    {n:'CORIANDER POWDER',sku:'MS-CORIANDE',hsn:'',cat:'Provision',unit:'KG',sale:223.0,pur:223.0,gst:0,op:0,rl:0},
-    {n:'CORIANDER WHOLE',sku:'MS-CORIANDE',hsn:'',cat:'Provision',unit:'KG',sale:142.0,pur:142.0,gst:0,op:0,rl:1.0},
-    {n:'CORN FLOUR',sku:'MS-CORNFLO',hsn:'',cat:'Provision',unit:'KG',sale:61.6,pur:61.6,gst:0,op:0,rl:25.0},
-    {n:'CORNFLAKES',sku:'MS-CORNFLAK',hsn:'',cat:'Provision',unit:'PKT',sale:130.0,pur:130.0,gst:0,op:0,rl:4.0},
-    {n:'DALCHINI',sku:'MS-DALCHINI',hsn:'',cat:'Provision',unit:'KG',sale:360.0,pur:360.0,gst:0,op:0,rl:0.2},
-    {n:'DESI GHEE',sku:'MS-DESIGHE',hsn:'',cat:'Provision',unit:'KG',sale:605.0,pur:605.0,gst:0,op:0,rl:3.0},
-    {n:'DRY CHANNA(phutnal)',sku:'MS-DRYCHAN',hsn:'',cat:'Provision',unit:'KG',sale:124.0,pur:124.0,gst:0,op:0,rl:2.0},
-    {n:'DRY EAST',sku:'MS-DRYEAST',hsn:'',cat:'Provision',unit:'PKT',sale:183.0,pur:183.0,gst:0,op:0,rl:3.0},
-    {n:'DRY GINGER',sku:'MS-DRYGING',hsn:'',cat:'Provision',unit:'KG',sale:480.0,pur:480.0,gst:0,op:0,rl:0},
-    {n:'DRY NOODLES',sku:'MS-DRYNOOD',hsn:'',cat:'Provision',unit:'KG',sale:95.0,pur:95.0,gst:0,op:0,rl:30.0},
-    {n:'DRY RED CHILLI KASMIRI',sku:'MS-DRYRED',hsn:'',cat:'Provision',unit:'KG',sale:380.0,pur:380.0,gst:0,op:0,rl:8.0},
-    {n:'ELAICHI BLACK',sku:'MS-ELAICHI',hsn:'',cat:'Provision',unit:'KG',sale:2240.0,pur:2240.0,gst:0,op:0,rl:0.1},
-    {n:'ELAICHI GREEN',sku:'MS-ELAICHI',hsn:'',cat:'Provision',unit:'KG',sale:3500.0,pur:3500.0,gst:0,op:0,rl:0.3},
-    {n:'FETA CHEESE',sku:'MS-FETACHE',hsn:'',cat:'Dairy',unit:'PKT',sale:176.0,pur:176.0,gst:0,op:0,rl:1.0},
-    {n:'FRENCH FRIES',sku:'MS-FRENCHF',hsn:'',cat:'Frozen',unit:'KG',sale:158.0,pur:158.0,gst:0,op:0,rl:37.5},
-    {n:'GARLIC POWDER',sku:'MS-GARLICP',hsn:'',cat:'Provision',unit:'KG',sale:360.0,pur:360.0,gst:0,op:0,rl:0},
-    {n:'GAS',sku:'MS-GAS',hsn:'',cat:'Fuel',unit:'NOS',sale:3150.0,pur:3150.0,gst:0,op:0,rl:5.0},
-    {n:'GELATIN',sku:'MS-GELATIN',hsn:'',cat:'Provision',unit:'KG',sale:950.0,pur:950.0,gst:0,op:0,rl:1.0},
-    {n:'GHERKINS',sku:'MS-GHERKINS',hsn:'',cat:'Provision',unit:'BTL',sale:85.0,pur:85.0,gst:0,op:0,rl:2.0},
-    {n:'GINGER POWDER',sku:'MS-GINGERP',hsn:'',cat:'Provision',unit:'KG',sale:750.0,pur:750.0,gst:0,op:0,rl:0},
-    {n:'GLUE TIN',sku:'MS-GLUETIN',hsn:'',cat:'Provision',unit:'KG',sale:320.0,pur:320.0,gst:0,op:0,rl:0},
-    {n:'GREEN CHILLI SAUCE',sku:'MS-GREENCH',hsn:'',cat:'Provision',unit:'BTL',sale:63.0,pur:63.0,gst:0,op:0,rl:6.0},
-    {n:'Green Olive',sku:'MS-GREENOL',hsn:'',cat:'Provision',unit:'BTL',sale:196.0,pur:196.0,gst:0,op:0,rl:0},
-    {n:'GSM',sku:'MS-GSM',hsn:'',cat:'Provision',unit:'KG',sale:237.33,pur:237.33,gst:0,op:0,rl:15.0},
-    {n:'GUD',sku:'MS-GUD',hsn:'',cat:'Provision',unit:'KG',sale:79.0,pur:79.0,gst:0,op:0,rl:1.0},
-    {n:'HALDI POWDER',sku:'MS-HALDIPO',hsn:'',cat:'Provision',unit:'KG',sale:191.0,pur:191.0,gst:0,op:0,rl:1.5},
-    {n:'Hing',sku:'MS-HING',hsn:'',cat:'Provision',unit:'BTL',sale:70.0,pur:70.0,gst:0,op:0,rl:2.0},
-    {n:'Hoisn Souce',sku:'MS-HOISNSO',hsn:'',cat:'Provision',unit:'BTL',sale:250.0,pur:250.0,gst:0,op:0,rl:2.0},
-    {n:'HONEY',sku:'MS-HONEY',hsn:'',cat:'Provision',unit:'KG',sale:252.0,pur:252.0,gst:0,op:0,rl:3.0},
-    {n:'HP Sauce',sku:'MS-HPSAUCE',hsn:'',cat:'Provision',unit:'BTL',sale:0,pur:0,gst:0,op:0,rl:0},
-    {n:'IMLY',sku:'MS-IMLY',hsn:'',cat:'Provision',unit:'KG',sale:135.6,pur:135.6,gst:0,op:0,rl:1.0},
-    {n:'JAIPHAL',sku:'MS-JAIPHAL',hsn:'',cat:'Provision',unit:'KG',sale:945.0,pur:945.0,gst:0,op:0,rl:0.1},
-    {n:'JALAPENO 3L',sku:'MS-JALAPENO',hsn:'',cat:'Provision',unit:'TIN',sale:325.0,pur:325.0,gst:0,op:0,rl:1.0},
-    {n:'JALAPENO Poppers',sku:'MS-JALAPENO',hsn:'',cat:'Frozen',unit:'KG',sale:240.0,pur:240.0,gst:0,op:0,rl:0},
-    {n:'JAVITRI',sku:'MS-JAVITRI',hsn:'',cat:'Provision',unit:'KG',sale:2530.0,pur:2530.0,gst:0,op:0,rl:0.1},
-    {n:'JEERA POWDER',sku:'MS-JEERAPO',hsn:'',cat:'Provision',unit:'KG',sale:790.0,pur:790.0,gst:0,op:0,rl:0},
-    {n:'JEERA WHOLE',sku:'MS-JEERAWH',hsn:'',cat:'Provision',unit:'KG',sale:372.0,pur:372.0,gst:0,op:0,rl:2.0},
-    {n:'KABULI CHANNA',sku:'MS-KABULIC',hsn:'',cat:'Provision',unit:'KG',sale:145.0,pur:145.0,gst:0,op:0,rl:3.0},
-    {n:'Kaju Whole',sku:'MS-KAJUWHO',hsn:'',cat:'Provision',unit:'KG',sale:1050.0,pur:1050.0,gst:0,op:0,rl:1.0},
-    {n:'KAJU 4 PC',sku:'MS-KAJU4P',hsn:'',cat:'Provision',unit:'KG',sale:950.0,pur:950.0,gst:0,op:0,rl:3.0},
-    {n:'KAJU BABY',sku:'MS-KAJUBAB',hsn:'',cat:'Provision',unit:'KG',sale:650.0,pur:650.0,gst:0,op:0,rl:3.0},
-    {n:'Khas Khas',sku:'MS-KHASKHA',hsn:'',cat:'Provision',unit:'KG',sale:2600.0,pur:2600.0,gst:0,op:0,rl:0},
-    {n:'Bhel Puri',sku:'MS-BHELPUR',hsn:'',cat:'Provision',unit:'PKT',sale:70.0,pur:70.0,gst:0,op:0,rl:0},
-    {n:'KASMIR CHILLI POWDER',sku:'MS-KASMIRC',hsn:'',cat:'Provision',unit:'KG',sale:690.0,pur:690.0,gst:0,op:0,rl:1.5},
-    {n:'KASTURI METHI',sku:'MS-KASTURI',hsn:'',cat:'Provision',unit:'KG',sale:650.0,pur:650.0,gst:0,op:0,rl:0.5},
-    {n:'keora water',sku:'MS-KEORAWA',hsn:'',cat:'Provision',unit:'BTL',sale:63.0,pur:63.0,gst:0,op:0,rl:2.0},
-    {n:'KITCHEN KING',sku:'MS-KITCHEN',hsn:'',cat:'Provision',unit:'KG',sale:816.0,pur:816.0,gst:0,op:0,rl:1.5},
-    {n:'LASAGNA SHEET',sku:'MS-LASAGNA',hsn:'',cat:'Provision',unit:'PKT',sale:285.0,pur:285.0,gst:0,op:0,rl:6.0},
-    {n:'LEMON YELLOW COLOR',sku:'MS-LEMONYE',hsn:'',cat:'Provision',unit:'TIN',sale:70.0,pur:70.0,gst:0,op:0,rl:5.0},
-    {n:'MACARONI PASTA',sku:'MS-MACARONI',hsn:'',cat:'Provision',unit:'PKT',sale:90.0,pur:90.0,gst:0,op:0,rl:0},
-    {n:'MAGAZ SEED',sku:'MS-MAGAZSE',hsn:'',cat:'Provision',unit:'KG',sale:507.0,pur:507.0,gst:0,op:0,rl:1.0},
-    {n:'MAIDA',sku:'MS-MAIDA',hsn:'',cat:'Provision',unit:'KG',sale:46.0,pur:46.0,gst:0,op:0,rl:100.0},
-    {n:'MAYONNAISE',sku:'MS-MAYONNAI',hsn:'',cat:'Provision',unit:'KG',sale:121.0,pur:121.0,gst:0,op:0,rl:24.0},
-    {n:'MILK MAID',sku:'MS-MILKMAI',hsn:'',cat:'Provision',unit:'TIN',sale:146.0,pur:146.0,gst:0,op:0,rl:10.0},
-    {n:'MILK POWDER',sku:'MS-MILKPOW',hsn:'',cat:'Provision',unit:'KG',sale:442.0,pur:442.0,gst:0,op:0,rl:1.0},
-    {n:'MUSTARD OIL',sku:'MS-MUSTARD',hsn:'',cat:'Provision',unit:'LTR',sale:210.0,pur:210.0,gst:0,op:0,rl:3.0},
-    {n:'MUSTARD PEST',sku:'MS-MUSTARD',hsn:'',cat:'Provision',unit:'BTL',sale:72.0,pur:72.0,gst:0,op:0,rl:1.0},
-    {n:'MUSTARD SEED',sku:'MS-MUSTARD',hsn:'',cat:'Provision',unit:'KG',sale:108.5,pur:108.5,gst:0,op:0,rl:1.0},
-    {n:'NACHOS',sku:'MS-NACHOS',hsn:'',cat:'Provision',unit:'PKT',sale:85.0,pur:85.0,gst:0,op:0,rl:24.0},
-    {n:'BUTTER (Amul - Delicious)',sku:'MS-BUTTER',hsn:'',cat:'Dairy',unit:'KG',sale:184.0,pur:184.0,gst:0,op:0,rl:5.0},
-    {n:'OLIVE OIL(JIVO)',sku:'MS-OLIVEOI',hsn:'',cat:'Provision',unit:'LTR',sale:400.0,pur:400.0,gst:0,op:0,rl:3.0},
-    {n:'Onion Powder',sku:'MS-ONIONPO',hsn:'',cat:'Provision',unit:'BTL',sale:0,pur:0,gst:0,op:0,rl:0},
-    {n:'ORANGE RED COLOR',sku:'MS-ORANGER',hsn:'',cat:'Provision',unit:'TIN',sale:70.0,pur:70.0,gst:0,op:0,rl:5.0},
-    {n:'OREGANO',sku:'MS-OREGANO',hsn:'',cat:'Provision',unit:'KG',sale:226.0,pur:226.0,gst:0,op:0,rl:1.0},
-    {n:'OREGANO SACHETS',sku:'MS-OREGANO',hsn:'',cat:'Provision',unit:'PKT',sale:84.0,pur:84.0,gst:0,op:0,rl:3.0},
-    {n:'OYSTER SAUCE',sku:'MS-OYSTERS',hsn:'',cat:'Provision',unit:'BTL',sale:160.0,pur:160.0,gst:0,op:0,rl:0},
-    {n:'OYSTER SAUCE(PANDA) 2.2KG',sku:'MS-OYSTERS',hsn:'',cat:'Provision',unit:'TIN',sale:630.0,pur:630.0,gst:0,op:0,rl:1.0},
-    {n:'PANEER',sku:'MS-PANEER',hsn:'',cat:'Dairy',unit:'KG',sale:380.0,pur:380.0,gst:0,op:0,rl:0},
-    {n:'PAPAD',sku:'MS-PAPAD',hsn:'',cat:'Provision',unit:'KG',sale:400.0,pur:400.0,gst:0,op:0,rl:3.0},
-    {n:'PEANUT',sku:'MS-PEANUT',hsn:'',cat:'Provision',unit:'KG',sale:168.0,pur:168.0,gst:0,op:0,rl:12.0},
-    {n:'PEANUT Rosted',sku:'MS-PEANUTR',hsn:'',cat:'Provision',unit:'KG',sale:240.0,pur:240.0,gst:0,op:0,rl:0},
-    {n:'PENNE PASTA',sku:'MS-PENNEPA',hsn:'',cat:'Provision',unit:'KG',sale:107.0,pur:107.0,gst:0,op:0,rl:5.0},
-    {n:'PERIPERI Powder',sku:'MS-PERIPERI',hsn:'',cat:'Provision',unit:'PKT',sale:145.0,pur:145.0,gst:0,op:0,rl:6.0},
-    {n:'PERIPERI SAUCE',sku:'MS-PERIPERI',hsn:'',cat:'Provision',unit:'BTL',sale:282.0,pur:282.0,gst:0,op:0,rl:2.0},
-    {n:'PICKLE Lemon',sku:'MS-PICKLEL',hsn:'',cat:'Provision',unit:'KG',sale:312.0,pur:312.0,gst:0,op:0,rl:5.0},
-    {n:'R.OIL',sku:'MS-ROIL',hsn:'',cat:'Provision',unit:'LTR',sale:156.0,pur:156.0,gst:0,op:0,rl:150.0},
-    {n:'RAJMA',sku:'MS-RAJMA',hsn:'',cat:'Provision',unit:'KG',sale:158.0,pur:158.0,gst:0,op:0,rl:3.0},
-    {n:'RED CHILLI POWDER',sku:'MS-REDCHIL',hsn:'',cat:'Provision',unit:'KG',sale:326.4,pur:326.4,gst:0,op:0,rl:3.0},
-    {n:'RED CHILLI SAUCE',sku:'MS-REDCHIL',hsn:'',cat:'Provision',unit:'BTL',sale:56.0,pur:56.0,gst:0,op:0,rl:6.0},
-    {n:'RICH COOKING CREAM',sku:'MS-RICHCOO',hsn:'',cat:'Dairy',unit:'LTR',sale:213.0,pur:213.0,gst:0,op:0,rl:12.0},
-    {n:'Rose Water',sku:'MS-ROSEWAT',hsn:'',cat:'Provision',unit:'BTL',sale:65.0,pur:65.0,gst:0,op:0,rl:2.0},
-    {n:'ROSEMARY',sku:'MS-ROSEMARY',hsn:'',cat:'Provision',unit:'PKT',sale:220.0,pur:220.0,gst:0,op:0,rl:1.0},
-    {n:'Saha Jeera',sku:'MS-SAHAJEE',hsn:'',cat:'Provision',unit:'KG',sale:640.0,pur:640.0,gst:0,op:0,rl:0.2},
-    {n:'SALAD OIL',sku:'MS-SALADOI',hsn:'',cat:'Provision',unit:'BTL',sale:125.0,pur:125.0,gst:0,op:0,rl:3.0},
-    {n:'SAMBER POWDER',sku:'MS-SAMBERP',hsn:'',cat:'Provision',unit:'PKT',sale:56.0,pur:56.0,gst:0,op:0,rl:0},
-    {n:'Sesmi Oil (500ML)',sku:'MS-SESMIOI',hsn:'',cat:'Provision',unit:'BTL',sale:450.0,pur:450.0,gst:0,op:0,rl:1.0},
-    {n:'SILVER FOIL',sku:'MS-SILVERF',hsn:'',cat:'Packaging & Dis.',unit:'PKT',sale:160.0,pur:160.0,gst:0,op:0,rl:6.0},
-    {n:'Sriraja Hot Chilli Sauce',sku:'MS-SRIRAJA',hsn:'',cat:'Provision',unit:'BTL',sale:227.0,pur:227.0,gst:0,op:0,rl:2.0},
-    {n:'SOYA SAUCE DARK CHINGS',sku:'MS-SOYASAU',hsn:'',cat:'Provision',unit:'BTL',sale:58.0,pur:58.0,gst:0,op:0,rl:10.0},
-    {n:'SPAGHETTI PASTA',sku:'MS-SPAGHETT',hsn:'',cat:'Provision',unit:'PKT',sale:70.0,pur:70.0,gst:0,op:0,rl:6.0},
-    {n:'SPRING ROLL SHEET',sku:'MS-SPRINGR',hsn:'',cat:'Frozen',unit:'PKT',sale:212.0,pur:212.0,gst:0,op:0,rl:5.0},
-    {n:'STAFF RICE',sku:'MS-STAFFRI',hsn:'',cat:'Provision',unit:'KG',sale:52.0,pur:52.0,gst:0,op:0,rl:104.0},
-    {n:'STAR ANISE',sku:'MS-STARANI',hsn:'',cat:'Provision',unit:'KG',sale:700.0,pur:700.0,gst:0,op:0,rl:0.2},
-    {n:'SUGAR',sku:'MS-SUGAR',hsn:'',cat:'Provision',unit:'KG',sale:42.0,pur:42.0,gst:0,op:0,rl:10.0},
-    {n:'SWEET CHILLI SAUCE',sku:'MS-SWEETCH',hsn:'',cat:'Provision',unit:'BTL',sale:237.0,pur:237.0,gst:0,op:0,rl:2.0},
-    {n:'SWEET CORN CREAM',sku:'MS-SWEETCO',hsn:'',cat:'Provision',unit:'TIN',sale:50.0,pur:50.0,gst:0,op:0,rl:6.0},
-    {n:'TABASCO SAUCE',sku:'MS-TABASCO',hsn:'',cat:'Provision',unit:'BTL',sale:198.0,pur:198.0,gst:0,op:0,rl:2.0},
-    {n:'TACOS',sku:'MS-TACOS',hsn:'',cat:'Provision',unit:'PKT',sale:140.0,pur:140.0,gst:0,op:0,rl:6.0},
-    {n:'TATA SALT',sku:'MS-TATASAL',hsn:'',cat:'Provision',unit:'KG',sale:220.0,pur:220.0,gst:0,op:0,rl:25.0},
-    {n:'TEA POWDER',sku:'MS-TEAPOWD',hsn:'',cat:'Provision',unit:'KG',sale:227.0,pur:227.0,gst:0,op:0,rl:1.0},
-    {n:'TESTING SALT',sku:'MS-TESTING',hsn:'',cat:'Provision',unit:'KG',sale:220.0,pur:220.0,gst:0,op:0,rl:3.0},
-    {n:'THYME',sku:'MS-THYME',hsn:'',cat:'Provision',unit:'KG',sale:640.0,pur:640.0,gst:0,op:0,rl:1.0},
-    {n:'TOMATO PURE',sku:'MS-TOMATOP',hsn:'',cat:'Provision',unit:'KG',sale:70.0,pur:70.0,gst:0,op:0,rl:8.0},
-    {n:'TOMATO SAUCE',sku:'MS-TOMATOS',hsn:'',cat:'Provision',unit:'LTR',sale:95.0,pur:95.0,gst:0,op:0,rl:24.0},
-    {n:'TOMATO SAUCE SACHETS',sku:'MS-TOMATOS',hsn:'',cat:'Provision',unit:'PKT',sale:77.0,pur:77.0,gst:0,op:0,rl:3.0},
-    {n:'TOOR DAL',sku:'MS-TOORDAL',hsn:'',cat:'Provision',unit:'KG',sale:160.0,pur:160.0,gst:0,op:0,rl:5.0},
-    {n:'Staff DAL',sku:'MS-STAFFDA',hsn:'',cat:'Provision',unit:'KG',sale:95.0,pur:95.0,gst:0,op:0,rl:15.0},
-    {n:'TORTILLA WRAP Medium Size 8',sku:'MS-TORTILLA',hsn:'',cat:'Provision',unit:'PKT',sale:80.0,pur:80.0,gst:0,op:0,rl:0},
-    {n:'VINEGAR',sku:'MS-VINEGAR',hsn:'',cat:'Provision',unit:'BTL',sale:36.0,pur:36.0,gst:0,op:0,rl:12.0},
-    {n:'WALNUT',sku:'MS-WALNUT',hsn:'',cat:'Provision',unit:'KG',sale:1640.0,pur:1640.0,gst:0,op:0,rl:1.0},
-    {n:'WHIP CREAM',sku:'MS-WHIPCRE',hsn:'',cat:'Dairy',unit:'PKT',sale:188.0,pur:188.0,gst:0,op:0,rl:2.0},
-    {n:'White Motor',sku:'MS-WHITEMO',hsn:'',cat:'Provision',unit:'KG',sale:90.0,pur:90.0,gst:0,op:0,rl:3.0},
-    {n:'WHITE PEPPER POWDER',sku:'MS-WHITEPE',hsn:'',cat:'Provision',unit:'PKT',sale:77.0,pur:77.0,gst:0,op:0,rl:10.0},
-    {n:'WHITE TIL',sku:'MS-WHITETI',hsn:'',cat:'Provision',unit:'KG',sale:251.7,pur:251.7,gst:0,op:0,rl:1.0},
-    {n:'YELLOW CHILLI POWDER',sku:'MS-YELLOWC',hsn:'',cat:'Provision',unit:'KG',sale:560.0,pur:560.0,gst:0,op:0,rl:0.1},
-    {n:'Worcestershire Sauce',sku:'MS-WORCESTE',hsn:'',cat:'Provision',unit:'BTL',sale:198.0,pur:198.0,gst:0,op:0,rl:1.0},
-    {n:'Sprite',sku:'MS-SPRITE',hsn:'',cat:'Beverages',unit:'BTL',sale:40.0,pur:40.0,gst:0,op:0,rl:0},
-    {n:'Thums Up',sku:'MS-THUMSUP',hsn:'',cat:'Beverages',unit:'BTL',sale:40.0,pur:40.0,gst:0,op:0,rl:0},
-    {n:'Coca Cola',sku:'MS-COCACOL',hsn:'',cat:'Beverages',unit:'BTL',sale:40.0,pur:40.0,gst:0,op:0,rl:0},
-    {n:'Gulab Jamun',sku:'MS-GULABJA',hsn:'',cat:'Desserts',unit:'PCS',sale:12.02,pur:12.02,gst:0,op:0,rl:0},
-    {n:'Water Chesnut',sku:'MS-WATERCH',hsn:'',cat:'Provision',unit:'TIN',sale:140.0,pur:140.0,gst:0,op:0,rl:10.0},
-    {n:'BASA FISH IND',sku:'MS-BASAFIS',hsn:'',cat:'Sea Foods',unit:'KG',sale:320.0,pur:320.0,gst:0,op:0,rl:0},
-    {n:'BASA FISH',sku:'MS-BASAFIS',hsn:'',cat:'Sea Foods',unit:'KG',sale:350.0,pur:350.0,gst:0,op:0,rl:0},
-    {n:'CHICKEN WHOLE',sku:'MS-CHICKEN',hsn:'',cat:'Poultry Items',unit:'KG',sale:199.0,pur:199.0,gst:0,op:0,rl:0},
-    {n:'CHICKEN WINGS',sku:'MS-CHICKEN',hsn:'',cat:'Poultry Items',unit:'KG',sale:193.0,pur:193.0,gst:0,op:0,rl:0},
-    {n:'CHICKEN B/L',sku:'MS-CHICKEN',hsn:'',cat:'Poultry Items',unit:'KG',sale:305.0,pur:305.0,gst:0,op:0,rl:0},
-    {n:'EGG',sku:'MS-EGG',hsn:'',cat:'Poultry Items',unit:'NOS',sale:5.3,pur:5.3,gst:0,op:0,rl:0},
-    {n:'MUTTON KEEMA',sku:'MS-MUTTONK',hsn:'',cat:'Meat Items',unit:'KG',sale:700.0,pur:700.0,gst:0,op:0,rl:0},
-    {n:'MUTTON B/L',sku:'MS-MUTTONB',hsn:'',cat:'Meat Items',unit:'KG',sale:820.0,pur:820.0,gst:0,op:0,rl:0},
-    {n:'MUTTON Curry Cut',sku:'MS-MUTTONC',hsn:'',cat:'Meat Items',unit:'KG',sale:800.0,pur:800.0,gst:0,op:0,rl:0},
-    {n:'PRAWNS',sku:'MS-PRAWNS',hsn:'',cat:'Sea Foods',unit:'KG',sale:400.0,pur:400.0,gst:0,op:0,rl:0},
-    {n:'PRAWNS 13-15 Tail',sku:'MS-PRAWNS1',hsn:'',cat:'Sea Foods',unit:'KG',sale:750.0,pur:750.0,gst:0,op:0,rl:0},
-    {n:'BECON',sku:'MS-BECON',hsn:'',cat:'Meat Items',unit:'KG',sale:900.0,pur:900.0,gst:0,op:0,rl:0},
-    {n:'Silver 450 ml',sku:'MS-SILVER4',hsn:'',cat:'Packaging & Dis.',unit:'NOS',sale:5.0,pur:5.0,gst:0,op:0,rl:0},
-    {n:'1000 ML',sku:'MS-1000ML',hsn:'',cat:'Packaging & Dis.',unit:'NOS',sale:9.75,pur:9.75,gst:0,op:0,rl:0},
-    {n:'Thali 5 cap',sku:'MS-THALI5',hsn:'',cat:'Packaging & Dis.',unit:'NOS',sale:14.16,pur:14.16,gst:0,op:0,rl:0},
-    {n:'500 ML',sku:'MS-500ML',hsn:'',cat:'Packaging & Dis.',unit:'NOS',sale:6.4,pur:6.4,gst:0,op:0,rl:0},
-    {n:'750 ML',sku:'MS-750ML',hsn:'',cat:'Packaging & Dis.',unit:'NOS',sale:7.1,pur:7.1,gst:0,op:0,rl:0},
-    {n:'300ML',sku:'MS-300ML',hsn:'',cat:'Packaging & Dis.',unit:'NOS',sale:4.6,pur:4.6,gst:0,op:0,rl:0},
-    {n:'100ML',sku:'MS-100ML',hsn:'',cat:'Packaging & Dis.',unit:'NOS',sale:3.75,pur:3.75,gst:0,op:0,rl:0},
-    {n:'500ML Combo',sku:'MS-500MLCO',hsn:'',cat:'Packaging & Dis.',unit:'NOS',sale:9.32,pur:9.32,gst:0,op:0,rl:0},
-    {n:'CARRY BAG 13*16',sku:'MS-CARRYBA',hsn:'',cat:'Packaging & Dis.',unit:'PKT',sale:150.0,pur:150.0,gst:0,op:0,rl:0},
-    {n:'CARRY BAG 16*20',sku:'MS-CARRYBA',hsn:'',cat:'Packaging & Dis.',unit:'PKT',sale:150.0,pur:150.0,gst:0,op:0,rl:0},
-    {n:'SOF OIL',sku:'MS-SOFOIL',hsn:'',cat:'Hk Cleaning Material',unit:'LTR',sale:9.5,pur:9.5,gst:0,op:0,rl:0},
-    {n:'KITCHEN CLOTH',sku:'MS-KITCHEN',hsn:'',cat:'Hk Cleaning Material',unit:'NOS',sale:12.0,pur:12.0,gst:0,op:0,rl:0},
-    {n:'CHEF CAP',sku:'MS-CHEFCAP',hsn:'',cat:'Hk Cleaning Material',unit:'PKT',sale:100.0,pur:100.0,gst:0,op:0,rl:0},
-    {n:'GARBAGE BAG',sku:'MS-GARBAGE',hsn:'',cat:'Hk Cleaning Material',unit:'KG',sale:78.0,pur:78.0,gst:0,op:0,rl:0},
-    {n:'Steel Scuber',sku:'MS-STEELSC',hsn:'',cat:'Hk Cleaning Material',unit:'PCS',sale:42.0,pur:42.0,gst:0,op:0,rl:0},
-    {n:'Wooden spork',sku:'MS-WOODENS',hsn:'',cat:'Packaging & Dis.',unit:'PKT',sale:100.0,pur:100.0,gst:0,op:0,rl:0},
-    {n:'Pizza Box',sku:'MS-PIZZABO',hsn:'',cat:'Packaging & Dis.',unit:'PCS',sale:11.0,pur:11.0,gst:0,op:0,rl:0},
-    {n:'Burger Box',sku:'MS-BURGERB',hsn:'',cat:'Packaging & Dis.',unit:'PCS',sale:9.0,pur:9.0,gst:0,op:0,rl:0},
-    {n:'Paper Bags New Small',sku:'MS-PAPERBA',hsn:'',cat:'Packaging & Dis.',unit:'PCS',sale:9.5,pur:9.5,gst:0,op:0,rl:0},
-    {n:'Paper Bags New BIG',sku:'MS-PAPERBA',hsn:'',cat:'Packaging & Dis.',unit:'PCS',sale:10.8,pur:10.8,gst:0,op:0,rl:0},
-    {n:'Tissu Paper',sku:'MS-TISSUPA',hsn:'',cat:'Packaging & Dis.',unit:'PKT',sale:22.0,pur:22.0,gst:0,op:0,rl:0},
-    {n:'Celo Tep',sku:'MS-CELOTEP',hsn:'',cat:'Packaging & Dis.',unit:'PCS',sale:15.0,pur:15.0,gst:0,op:0,rl:0},
-    {n:'Stapler PIN',sku:'MS-STAPLER',hsn:'',cat:'Packaging & Dis.',unit:'PCS',sale:25.0,pur:25.0,gst:0,op:0,rl:0}
-  ],
-  pur: [],
-  sal: [],
-  par: [
-    {n:'AL Salam Fish Land',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Anmol Industries',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'B.V.Yadav Milk Supplier',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Fresh Quality Vegetable And Fruits Shop',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'GOGAS ENERGY PVT LTD',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Hyperpure',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Lucy and Co',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'MAHADEV ENTERPRISES',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Milk & Curd Khaleel',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'M.Madhusudhan',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'More Aqua',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Nagaraju Paper Bags Marketing',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'N.Hema Chandra Reddy',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'P.Narsemaiah Coal Depot',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'SAKSHI Pest Control',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Shiva Kumar Gas Servicing',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Shree Jai Jagadamba',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Snackerstreet Pvt.Ltd.',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Sneha Farms Private Limited',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Sneha Farms Pvt Ltd (Eggs)',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30},
-    {n:'Spreaders Food Solutions',type:'Supplier',phone:'',gstin:'',city:'Hyderabad',cr:30}
-  ]
-};
+var DB = { itm: [], pur: [], sal: [], par: [] };
+var GITHUB_REPO=''; var GITHUB_TOKEN=''; var DATA_FILE='data.json'; var DATA_SHA='';
 
 
 function removeRow(btn,fn){btn.closest('tr').remove();if(fn==='purCalc')purCalc();else if(fn==='invCalc')invCalc();}
@@ -1907,12 +1713,13 @@ function loadFromLocal() {
 function autoSave() {
   saveToLocal();
   var el = document.getElementById('save-indicator');
-  if (!el) return;
-  el.textContent = 'Saved ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  el.style.color = 'var(--g)';
-  setTimeout(function(){ el.style.color = 'var(--t3)'; }, 2500);
+  if (ghConfigured()) {
+    saveDataToGitHub(true);
+  } else {
+    if (el) { el.textContent = 'Saved'; el.style.color = 'var(--g)';
+      setTimeout(function(){ el.textContent=''; }, 2500); }
+  }
 }
-
 function exportJSON() {
   var blob = new Blob([JSON.stringify({itm:DB.itm,pur:DB.pur,sal:DB.sal,par:DB.par},null,2)],{type:'application/json'});
   var a = document.createElement('a');
@@ -2167,11 +1974,10 @@ function proceedToApp() {
   document.getElementById('login-screen').style.display = 'none';
   var s = getSession();
   if (s) {
-    var av = document.querySelector('.av');
+    var av = document.getElementById('user-av');
     if (av) {
       av.textContent = s.email.split('@')[0].substring(0,2).toUpperCase();
       av.title = s.email + ' — click to logout';
-      av.style.cursor = 'pointer';
       av.onclick = function(){ if(confirm('Logout ' + s.email + '?')) logout(); };
     }
   }
@@ -2203,10 +2009,104 @@ function copyScript() {
   }
 }
 
+function showSaved() {
+  document.getElementById('data-menu').style.display = 'none';
+  var el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.textContent = 'Saved!';
+  el.style.color = 'var(--g)';
+  setTimeout(function(){ el.textContent = ''; }, 2500);
+}
+
+function ghInit() {
+  GITHUB_REPO  = localStorage.getItem('gh_repo')  || '';
+  GITHUB_TOKEN = localStorage.getItem('gh_token') || '';
+}
+function ghConfigured() { return !!(GITHUB_REPO && GITHUB_TOKEN); }
+
+function loadDataFromGitHub(cb) {
+  var url = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/main/' + DATA_FILE + '?t=' + Date.now();
+  fetch(url)
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(d){
+      if(d.itm) DB.itm=d.itm; if(d.pur) DB.pur=d.pur;
+      if(d.sal) DB.sal=d.sal; if(d.par) DB.par=d.par;
+      saveToLocal();
+      if(cb) cb(true);
+    })
+    .catch(function(err){ console.warn('GitHub load failed:', err.message); loadFromLocal(); if(cb) cb(false); });
+}
+
+function saveDataToGitHub(silent) {
+  if (!ghConfigured()) { saveToLocal(); return; }
+  var payload = JSON.stringify({itm:DB.itm,pur:DB.pur,sal:DB.sal,par:DB.par,version:1,savedAt:new Date().toISOString()},null,2);
+  var api = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + DATA_FILE;
+  var el  = document.getElementById('save-indicator');
+  fetch(api, {headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json'}})
+    .then(function(r){ return r.json(); })
+    .then(function(info){
+      DATA_SHA = info.sha || DATA_SHA;
+      return fetch(api, {method:'PUT',
+        headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+        body:JSON.stringify({message:'data update '+new Date().toLocaleString('en-IN'),
+          content:btoa(unescape(encodeURIComponent(payload))),sha:DATA_SHA})
+      });
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res.content&&res.content.sha) DATA_SHA=res.content.sha;
+      if(!silent&&el){ el.textContent='Saved to GitHub'; el.style.color='var(--g)';
+        setTimeout(function(){ el.textContent=''; },3000); }
+    })
+    .catch(function(){
+      if(el){ el.textContent='Saved locally'; el.style.color='var(--a)';
+        setTimeout(function(){ el.textContent=''; },3000); }
+    });
+}
+
+function openGHSettings() {
+  ghInit();
+  document.getElementById('gh-repo-inp').value  = GITHUB_REPO;
+  document.getElementById('gh-token-inp').value = GITHUB_TOKEN;
+  var m = document.getElementById('data-menu');
+  if(m) m.style.display = 'none';
+  document.getElementById('gh-modal').style.display = 'flex';
+}
+
+function saveGHSettings() {
+  var repo  = document.getElementById('gh-repo-inp').value.trim();
+  var token = document.getElementById('gh-token-inp').value.trim();
+  if(!repo)  { alert('Enter your GitHub repo name, e.g. krushnakanha6/invenpro-'); return; }
+  if(!token) { alert('Enter your GitHub Personal Access Token'); return; }
+  localStorage.setItem('gh_repo', repo);
+  localStorage.setItem('gh_token', token);
+  GITHUB_REPO=repo; GITHUB_TOKEN=token;
+  document.getElementById('gh-modal').style.display = 'none';
+  var el = document.getElementById('save-indicator');
+  if(el){ el.textContent='Connecting...'; el.style.color='var(--b)'; }
+  loadDataFromGitHub(function(ok){
+    if(ok){
+      rDash();
+      if(el){ el.textContent='Connected!'; el.style.color='var(--g)';
+        setTimeout(function(){ el.textContent=''; },3000); }
+      alert('Connected!\nData loaded from GitHub.\nAll saves will go to data.json automatically.');
+    } else {
+      if(el) el.textContent='';
+      alert('Could not load data.json from GitHub.\nCheck:\n1. Repo name is correct\n2. data.json exists in repo\n3. Token has "repo" scope');
+    }
+  });
+}
+
+
 function checkAuth() {
-  var session = getSession();
-  if (session && isAllowed(session.email)) {
-    proceedToApp();
+  ghInit();
+  var s = getSession();
+  if (s && isAllowed(s.email)) {
+    if (ghConfigured()) {
+      var el = document.getElementById('save-indicator');
+      if (el) { el.textContent = 'Loading...'; el.style.color = 'var(--b)'; }
+      loadDataFromGitHub(function() { proceedToApp(); rDash(); if(el) el.textContent=''; });
+    } else { loadFromLocal(); proceedToApp(); }
   }
 }
 
