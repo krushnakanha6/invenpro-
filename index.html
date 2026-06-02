@@ -779,54 +779,85 @@ function scanBillAI(input) {
   statusDiv.style.display = 'flex';
   statusDiv.style.background = 'var(--bl)';
   statusDiv.style.color = 'var(--b)';
-  statusDiv.innerHTML = '<i class="ti ti-loader" style="font-size:14px;animation:spin 1s linear infinite"></i><span>&nbsp;Reading bill with AI... please wait</span>';
+  statusDiv.innerHTML = '<i class="ti ti-loader" style="font-size:14px;animation:spin 1s linear infinite"></i><span>&nbsp;Reading bill with AI...</span>';
+
   if (!document.getElementById('spin-style')) {
     var st = document.createElement('style');
     st.id = 'spin-style';
     st.textContent = '@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}';
     document.head.appendChild(st);
   }
+
   var reader = new FileReader();
   reader.onload = function(e) {
-    var b64 = e.target.result.split(',')[1];
+    var b64  = e.target.result.split(',')[1];
     var mime = e.target.result.split(';')[0].split(':')[1] || 'image/jpeg';
+
     var prompt =
-      'Extract data from this purchase bill image. Return ONLY valid JSON, no markdown, no explanation.' +
+      'Extract all data from this purchase bill/invoice image. Return ONLY valid JSON, no markdown, no explanation.' +
       ' Format: {"supplier":"","bill_no":"","date":"YYYY-MM-DD","items":[{"name":"","qty":1,"unit":"PCS","rate":0,"gst_percent":0}],"grand_total":0}' +
-      ' Rules: rate=price per unit BEFORE GST. If price includes GST back-calculate: rate=price_with_gst/(1+gst_percent/100).' +
-      ' If GST not shown use gst_percent=0 and rate=printed price.' +
-      ' Extract ALL line items. Date format YYYY-MM-DD. Item names exactly as printed.';
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } },
-          { type: 'text', text: prompt }
-        ]}]
-      })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.error) { scanError(statusDiv, data.error.message || 'AI error'); return; }
-      var raw = (data.content && data.content[0]) ? data.content[0].text : '';
-      raw = raw.replace(/```json/gi,'').replace(/```/g,'').trim();
-      var bill = null;
-      try { bill = JSON.parse(raw); } catch(e) {
-        var m = raw.match(/\{[\s\S]*\}/);
-        try { bill = m ? JSON.parse(m[0]) : null; } catch(e2) { bill = null; }
+      ' Rules: rate=price per unit BEFORE GST. If price includes GST back-calculate: rate=price/(1+gst/100).' +
+      ' If GST not visible use gst_percent=0 and rate=printed price.' +
+      ' Extract ALL line items. Date in YYYY-MM-DD. Item names exactly as printed.';
+
+    var requestBody = JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } },
+        { type: 'text', text: prompt }
+      ]}]
+    });
+
+    // Try direct API first, fall back to CORS proxy if blocked
+    function tryFetch(url, headers, body, cb) {
+      fetch(url, { method: 'POST', headers: headers, body: body })
+        .then(function(r) { return r.json(); })
+        .then(function(d) { cb(null, d); })
+        .catch(function(err) { cb(err, null); });
+    }
+
+    // Primary: direct Anthropic API (works when opened as file:// or netlify/self-hosted)
+    var directHeaders = { 'Content-Type': 'application/json' };
+
+    // Fallback: use corsproxy.io which adds CORS headers (works on GitHub Pages)
+    var proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://api.anthropic.com/v1/messages');
+    var proxyHeaders = { 'Content-Type': 'application/json' };
+
+    tryFetch('https://api.anthropic.com/v1/messages', directHeaders, requestBody, function(err1, data1) {
+      if (!err1 && data1 && !data1.error) {
+        processAIResponse(data1, statusDiv);
+      } else {
+        // Try proxy
+        tryFetch(proxyUrl, proxyHeaders, requestBody, function(err2, data2) {
+          if (!err2 && data2 && !data2.error) {
+            processAIResponse(data2, statusDiv);
+          } else {
+            var msg = (err2 || err1) ? (err2 || err1).message : (data2 && data2.error ? data2.error.message : 'Unknown error');
+            scanError(statusDiv, 'AI scan failed: ' + msg + '. Try opening the file locally instead of GitHub Pages.');
+          }
+        });
       }
-      if (!bill) { scanError(statusDiv, 'Could not parse bill. Try a clearer photo.'); return; }
-      fillBillFromAI(bill, statusDiv);
-    })
-    .catch(function() { scanError(statusDiv, 'Network error. Check connection.'); });
+    });
   };
   reader.onerror = function() { scanError(statusDiv, 'Could not read file.'); };
   reader.readAsDataURL(file);
   input.value = '';
 }
+
+function processAIResponse(data, statusDiv) {
+  if (data.error) { scanError(statusDiv, data.error.message || 'AI error'); return; }
+  var raw = (data.content && data.content[0]) ? data.content[0].text : '';
+  raw = raw.replace(/```json/gi,'').replace(/```/g,'').trim();
+  var bill = null;
+  try { bill = JSON.parse(raw); } catch(ex) {
+    var m = raw.match(/\{[\s\S]*\}/);
+    try { bill = m ? JSON.parse(m[0]) : null; } catch(ex2) { bill = null; }
+  }
+  if (!bill) { scanError(statusDiv, 'Could not parse bill response. Try a clearer photo.'); return; }
+  fillBillFromAI(bill, statusDiv);
+}
+
 
 function scanError(div, msg) {
   div.style.background = 'var(--rl)';
